@@ -12,10 +12,25 @@ import React, { useState, useEffect } from 'react';
 import {Alert, SafeAreaView, StyleSheet, View, Text, Button } from 'react-native';
 import { NativeModules, NativeEventEmitter } from 'react-native';
 // import NetInfo from '@react-native-community/netinfo';
-const FancyMathEventEmitter = new NativeEventEmitter(NativeModules.NetInfo);
+
+
+const SvmxNativeModules = NativeModules.NetworkInfo;
+const SvmxNativeModulesEventEmitter = new NativeEventEmitter(SvmxNativeModules);
+
+
 const App = () => {
-//  const [netInfo, setNetInfo] = useState('');
-//  useEffect(() => {
+  const [netInfo, setNetInfo] = useState('');
+  eventHandler = async (networkInfo) => {
+    try {
+      if (networkInfo) {
+        const status = networkInfo.isConnected ? 'Connected' : 'Not Connected';
+        setNetInfo(status);
+      }
+   } catch (error) {
+      
+    }
+  }
+  useEffect(() => {
    
 //    const unsubscribe = NetInfo.addEventListener((state) => {
 //      setNetInfo(
@@ -28,19 +43,15 @@ const App = () => {
 //    return () => {
 //      unsubscribe();
 //    };
-//  }, []);
+handleConnectivitStatus = SvmxNativeModulesEventEmitter.addListener('networkStatusDidChange', eventHandler, this);
+    getNetworkStatus();
 
+
+  }, []);
+ 
   const getNetInfo = () => {
 
-    NativeModules.NetInfo.getNetInfo(
-      /* callback */ function (result) {
-        Alert.alert(
-          'Netinfo',
-          `Net INfo Syas  is net work connect ${result}`,
-          [{ text: 'OK' }],
-          {cancelable: false});
-      });
-  
+   
 //    NetInfo.fetch().then((state) => {
 //      setNetInfo(
 //        `Connection type: ${state.type === 'cellular' && state.details ? `${state.type} (${state.details.cellularGeneration && ''})` : (state.type !== '' ? state.type : 'N/A')}
@@ -49,7 +60,12 @@ const App = () => {
 //      );
 //    });
   };
-
+  getNetworkStatus = async () => {
+    const networkInfo = await SvmxNativeModules.getCurrentState();
+    console.log('networkInfo ', networkInfo);
+    const status = networkInfo && networkInfo.isConnected ? 'Connected' : 'Not Connected';
+    setNetInfo(status);
+  }
 
  return (
    <SafeAreaView style={{ flex: 1 }}>
@@ -58,7 +74,8 @@ const App = () => {
          Network Information
        </Text>
        <Text style={styles.textStyle}>
-         {/*Here is NetInfo to get device type*/}
+         {/*Here is NetInfo to get device type*/
+         netInfo}
          
        </Text>
        <Button title="Refresh"  onPress={getNetInfo} color="#841584" />

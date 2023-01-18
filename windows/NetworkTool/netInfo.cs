@@ -10,41 +10,74 @@ using Windows.Networking.Connectivity;
 namespace NetworkTool
 {
     [ReactModule]
-    public class NetInfo
+    internal partial class NetworkInfo
     {
-        [ReactMethod("getNetInfo")]
-        public string GetNetInfo()
+
+
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1009:DeclareEventHandlersCorrectly", Justification = "API matches Windows.Networking.Connectivity.NetworkingInformation.")]
+        public event NetworkStatusChangedEventHandler networkStatusCallback;
+        public NetworkInfo()
         {
-            bool isInternetConnected = NetworkInterface.GetIsNetworkAvailable();
-            ConnectionProfile InternetConnectionProfile = NetworkInformation.GetInternetConnectionProfile();
-            bool isWLANConnection = (InternetConnectionProfile == null) ? false : InternetConnectionProfile.IsWlanConnectionProfile;
-
-
-            string wifi = "" + isWLANConnection;
-            string isInternet = "" + isInternetConnected;
-
-
-            bool ismobile = (InternetConnectionProfile == null) ? false : InternetConnectionProfile.IsWwanConnectionProfile;
-            string mobile = "" + ismobile;
-
-            var connectionCost = NetworkInformation.GetInternetConnectionProfile().GetConnectionCost();
-            string connection = "" + connectionCost.NetworkCostType;
-            internetetInfo internetetInfo = new internetetInfo(isInternet, wifi, connection);
-
-            if (connectionCost.NetworkCostType == NetworkCostType.Unknown
-        || connectionCost.NetworkCostType == NetworkCostType.Unrestricted) {
-                //Connection cost is unknown/unrestricted
-            }
-            else {
-                //Metered Network
-            }
-
-
-            AddEvent(internetetInfo);
-            return "\n     "+internetetInfo.isInternetConnected+ "\n     " + internetetInfo.isWifi+ "\n     " + internetetInfo.connectCost;
+            networkStatusCallback = new NetworkStatusChangedEventHandler(OnNetworkStatusChanged);
+            NetworkInformation.NetworkStatusChanged += networkStatusCallback;
         }
 
-        [ReactEvent]
-        public Action<object> AddEvent { get; set; }
+
+
+        [ReactEvent("networkStatusDidChange")]
+        public Action<JSValue> NetworkStatusChanged { get; set; }
+
+
+        public void OnNetworkStatusChanged(object ignored)
+        {
+            try {
+                var connectivity = CreateConnectivityEventMap();
+
+                NetworkStatusChanged?.Invoke(connectivity);
+            }
+            catch (Exception ex) {
+
+            }
+
+        }
+
+        [ReactMethod("getCurrentState")]
+        public void getCurrentState(ReactPromise<JSValue> promise)
+        {
+            promise.Resolve(CreateConnectivityEventMap());
+        }
+
+        public bool GetIsConnected()
+        {
+            var profile = NetworkInformation.GetInternetConnectionProfile();
+
+            if (profile != null) {
+                return profile.GetNetworkConnectivityLevel() != NetworkConnectivityLevel.None;
+            }
+            else {
+                return false;
+            }
+        }
+        private JSValueObject CreateConnectivityEventMap()
+        {
+            var eventMap = new JSValueObject();
+            try {
+                // Add the connection type information
+
+
+                // Add the connection state information
+                var isConnected = GetIsConnected();
+                eventMap.Add("isConnected", isConnected);
+
+                // Add the details, if there are any
+
+            }
+            catch (Exception ex) {
+
+            }
+
+            return eventMap;
+        }
+
     }
 }
